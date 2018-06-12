@@ -10,6 +10,7 @@ import sys
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
+
     def remove_articles(text):
         return re.sub(r'\b(a|an|the)\b', ' ', text)
 
@@ -40,7 +41,7 @@ def f1_score(prediction, ground_truth):
 
 
 def exact_match_score(prediction, ground_truth):
-    return (normalize_answer(prediction) == normalize_answer(ground_truth))
+    return normalize_answer(prediction) == normalize_answer(ground_truth)
 
 
 def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     with open(args.dataset_file) as dataset_file:
         dataset_json = json.load(dataset_file)
-        if (dataset_json['version'] != expected_version):
+        if dataset_json['version'] != expected_version:
             print('Evaluation expects v-' + expected_version +
                   ', but got dataset with v-' + dataset_json['version'],
                   file=sys.stderr)

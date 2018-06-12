@@ -50,7 +50,7 @@ class DocReader(object):
         # 0-1 per paragraph (no softmax).
         if args.model_type == 'rnn':
             self.network = RnnDocReader(args, normalize)
-        elif args.model_type == 'r_net':
+        elif args.model_type == 'r-net':
             self.network = R_Net(args, normalize)
         elif args.model_type == 'mnemonic':
             self.network = MnemonicReader(args, normalize)
@@ -97,7 +97,6 @@ class DocReader(object):
         # Return added words
         return to_add
 
-
     def expand_char_dictionary(self, chars):
         """Add chars to the DocReader dictionary if they do not exist. The
         underlying embedding matrix is also expanded (with random embeddings).
@@ -120,8 +119,8 @@ class DocReader(object):
 
             old_char_embedding = self.network.char_embedding.weight.data
             self.network.char_embedding = torch.nn.Embedding(self.args.char_size,
-                                                        self.args.char_embedding_dim,
-                                                        padding_idx=0)
+                                                             self.args.char_embedding_dim,
+                                                             padding_idx=0)
             new_char_embedding = self.network.char_embedding.weight.data
             new_char_embedding[:old_char_embedding.size(0)] = old_char_embedding
 
@@ -146,7 +145,7 @@ class DocReader(object):
         with open(embedding_file) as f:
             for line in f:
                 parsed = line.rstrip().split(' ')
-                assert(len(parsed) == embedding.size(1) + 1)
+                assert (len(parsed) == embedding.size(1) + 1)
                 w = self.word_dict.normalize(parsed[0])
                 if w in words:
                     vec = torch.Tensor([float(i) for i in parsed[1:]])
@@ -184,7 +183,7 @@ class DocReader(object):
         with open(char_embedding_file) as f:
             for line in f:
                 parsed = line.rstrip().split(' ')
-                assert(len(parsed) == char_embedding.size(1) + 1)
+                assert (len(parsed) == char_embedding.size(1) + 1)
                 w = self.char_dict.normalize(parsed[0])
                 if w in chars:
                     vec = torch.Tensor([float(i) for i in parsed[1:]])
@@ -281,7 +280,7 @@ class DocReader(object):
 
         # Train mode
         self.network.train()
-        
+
         # Transfer to GPU
         if self.use_cuda:
             inputs = [e if e is None else Variable(e.cuda(async=True)) for e in ex[:-3]]
@@ -291,7 +290,7 @@ class DocReader(object):
             inputs = [e if e is None else Variable(e) for e in ex[:-3]]
             target_s = Variable(ex[-3])
             target_e = Variable(ex[-2])
-        
+
         # Run forward
         score_s, score_e = self.network(*inputs)
 
@@ -303,8 +302,8 @@ class DocReader(object):
         loss.backward()
 
         # Clip gradients
-        torch.nn.utils.clip_grad_norm(self.network.parameters(),
-                                      self.args.grad_clipping)
+        torch.nn.utils.clip_grad_norm_(self.network.parameters(),
+                                       self.args.grad_clipping)
 
         # Update parameters
         self.optimizer.step()
@@ -313,7 +312,7 @@ class DocReader(object):
         # Reset any partially fixed parameters (e.g. rare words)
         self.reset_parameters()
 
-        return loss.data[0], ex[0].size(0)
+        return loss.item(), ex[0].size(0)
 
     def reset_parameters(self):
         """Reset any partially fixed parameters to original states."""
@@ -354,14 +353,13 @@ class DocReader(object):
         """
         # Eval mode
         self.network.eval()
-
         # Transfer to GPU
         if self.use_cuda:
             inputs = [e if e is None else
-                      Variable(e.cuda(async=True), volatile=True)
+                      Variable(e.cuda(async=True))
                       for e in ex[:8]]
         else:
-            inputs = [e if e is None else Variable(e, volatile=True)
+            inputs = [e if e is None else Variable(e)
                       for e in ex[:8]]
 
         # Run forward

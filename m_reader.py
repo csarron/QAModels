@@ -21,6 +21,7 @@ from torch.autograd import Variable
 class MnemonicReader(nn.Module):
     RNN_TYPES = {'lstm': nn.LSTM, 'gru': nn.GRU, 'rnn': nn.RNN}
     CELL_TYPES = {'lstm': nn.LSTMCell, 'gru': nn.GRUCell, 'rnn': nn.RNNCell}
+
     def __init__(self, args, normalize=True):
         super(MnemonicReader, self).__init__()
         # Store config
@@ -33,8 +34,8 @@ class MnemonicReader(nn.Module):
 
         # Char embeddings (+1 for padding)
         self.char_embedding = nn.Embedding(args.char_size,
-                                      args.char_embedding_dim,
-                                      padding_idx=0)
+                                           args.char_embedding_dim,
+                                           padding_idx=0)
 
         # Char rnn to generate char features
         self.char_rnn = layers.StackedBRNN(
@@ -63,7 +64,7 @@ class MnemonicReader(nn.Module):
         )
 
         doc_hidden_size = 2 * args.hidden_size
-        
+
         # Interactive aligning, self aligning and aggregating
         self.interactive_aligners = nn.ModuleList()
         self.interactive_SFUs = nn.ModuleList()
@@ -93,14 +94,13 @@ class MnemonicReader(nn.Module):
 
         # Memmory-based Answer Pointer
         self.mem_ans_ptr = layers.MemoryAnsPointer(
-            x_size=2*args.hidden_size, 
-            y_size=2*args.hidden_size, 
-            hidden_size=args.hidden_size, 
+            x_size=2 * args.hidden_size,
+            y_size=2 * args.hidden_size,
+            hidden_size=args.hidden_size,
             hop=args.hop,
             dropout_rate=args.dropout_rnn,
             normalize=normalize
         )
-        
 
     def forward(self, x1, x1_c, x1_f, x1_mask, x2, x2_c, x2_f, x2_mask):
         """Inputs:
@@ -140,7 +140,7 @@ class MnemonicReader(nn.Module):
 
         # Encode document with RNN
         c = self.encoding_rnn(torch.cat(crnn_input, 2), x1_mask)
-        
+
         # Encode question with RNN
         q = self.encoding_rnn(torch.cat(qrnn_input, 2), x2_mask)
 
@@ -148,12 +148,13 @@ class MnemonicReader(nn.Module):
         c_check = c
         for i in range(self.args.hop):
             q_tilde = self.interactive_aligners[i].forward(c_check, q, x2_mask)
-            c_bar = self.interactive_SFUs[i].forward(c_check, torch.cat([q_tilde, c_check * q_tilde, c_check - q_tilde], 2))
+            c_bar = self.interactive_SFUs[i].forward(c_check,
+                                                     torch.cat([q_tilde, c_check * q_tilde, c_check - q_tilde], 2))
             c_tilde = self.self_aligners[i].forward(c_bar, x1_mask)
             c_hat = self.self_SFUs[i].forward(c_bar, torch.cat([c_tilde, c_bar * c_tilde, c_bar - c_tilde], 2))
             c_check = self.aggregate_rnns[i].forward(c_hat, x1_mask)
 
         # Predict
         start_scores, end_scores = self.mem_ans_ptr.forward(c_check, q, x1_mask, x2_mask)
-        
+
         return start_scores, end_scores

@@ -5,26 +5,26 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 """Main reader training script."""
-
-import sys
-sys.path.append('.')
 import argparse
-import torch
+
 import numpy as np
+import torch
+import sys
+
 try:
     import ujson as json
 except ImportError:
     import json
 import os
-import subprocess
 import logging
 
-
-import utils, vector, config, data
+import utils
+import vector
+import config
+import data
 from model import DocReader
 
 logger = logging.getLogger()
-
 
 # ------------------------------------------------------------------------------
 # Training arguments.
@@ -35,6 +35,7 @@ logger = logging.getLogger()
 DATA_DIR = os.path.join('data', 'datasets')
 MODEL_DIR = os.path.join('data', 'models')
 EMBED_DIR = os.path.join('data', 'embeddings')
+
 
 def str2bool(v):
     return v.lower() in ('yes', 'true', 't', '1', 'y')
@@ -61,9 +62,9 @@ def add_train_args(parser):
                                'operations (for reproducibility)'))
     runtime.add_argument('--num-epochs', type=int, default=40,
                          help='Train data iterations')
-    runtime.add_argument('--batch-size', type=int, default=45,
+    runtime.add_argument('--batch-size', type=int, default=32,
                          help='Batch size for training')
-    runtime.add_argument('--test-batch-size', type=int, default=32,
+    runtime.add_argument('--test-batch-size', type=int, default=128,
                          help='Batch size during validation/testing')
 
     # Files
@@ -75,12 +76,12 @@ def add_train_args(parser):
     files.add_argument('--data-dir', type=str, default=DATA_DIR,
                        help='Directory of training/validation data')
     files.add_argument('--train-file', type=str,
-                       default='SQuAD-v1.1-train-processed-spacy.txt',
+                       default='SQuAD-train-v1.1-processed-spacy.txt',
                        help='Preprocessed train file')
     files.add_argument('--dev-file', type=str,
-                       default='SQuAD-v1.1-dev-processed-spacy.txt',
+                       default='SQuAD-dev-v1.1-processed-spacy.txt',
                        help='Preprocessed dev file')
-    files.add_argument('--dev-json', type=str, default='SQuAD-v1.1-dev.json',
+    files.add_argument('--dev-json', type=str, default='SQuAD-dev-v1.1.json',
                        help=('Unprocessed dev file to run validation '
                              'while training on'))
     files.add_argument('--embed-dir', type=str, default=EMBED_DIR,
@@ -144,7 +145,7 @@ def set_defaults(args):
             raise IOError('No such file: %s' % args.char_embedding_file)
 
     # Set model directory
-    subprocess.call(['mkdir', '-p', args.model_dir])
+    os.makedirs(args.model_dir, exist_ok=True)
 
     # Set model name
     if not args.model_name:
@@ -204,7 +205,7 @@ def init_from_scratch(args, train_exs, dev_exs):
     logger.info('-' * 100)
     logger.info('Build word dictionary')
     word_dict = utils.build_word_dict(args, train_exs + dev_exs)
-    logger.info('Num words = %d' % len(word_dict))    
+    logger.info('Num words = %d' % len(word_dict))
 
     # Build a char dictionary from the data questions + documents (train/dev splits)
     logger.info('-' * 100)
@@ -367,7 +368,7 @@ def eval_accuracies(pred_s, target_s, pred_e, target_e):
 
         # Both start and end match
         if any([1 for _s, _e in zip(target_s[i], target_e[i])
-                if _s == pred_s[i] and _e == pred_e[i]]):
+                if int(_s) == int(pred_s[i]) and int(_e) == int(pred_e[i])]):
             em.update(1)
         else:
             em.update(0)
@@ -396,6 +397,10 @@ def main(args):
         dev_texts = utils.load_text(args.dev_json)
         dev_offsets = {ex['id']: ex['offsets'] for ex in dev_exs}
         dev_answers = utils.load_answers(args.dev_json)
+    else:
+        dev_texts = None
+        dev_offsets = None
+        dev_answers = None
 
     # --------------------------------------------------------------------------
     # MODEL
@@ -516,13 +521,13 @@ def main(args):
         # Validate unofficial (train)
         validate_unofficial(args, train_loader, model, stats, mode='train')
 
-        # Validate unofficial (dev)
-        result = validate_unofficial(args, dev_loader, model, stats, mode='dev')
-
-        # Validate official
         if args.official_eval:
+            # Validate official (dev)
             result = validate_official(args, dev_loader, model, stats,
                                        dev_offsets, dev_texts, dev_answers)
+        else:
+            # Validate unofficial (dev)
+            result = validate_unofficial(args, dev_loader, model, stats, mode='dev')
 
         # Save best valid
         if args.valid_metric is None or args.valid_metric == 'None':

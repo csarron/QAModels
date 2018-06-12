@@ -22,7 +22,6 @@ Please feel free to contact with Xin Liu (xliucr@connect.ust.hk) if you have any
 | Mnemonic Reader + RL (original paper) | 72.1   | 81.6   |
 | Mnemonic Reader (trained model)       | 72.3   | 81.4   |
 
-![EM_F1](img/EM_F1.png)
 
 ### Requirements
 
@@ -49,13 +48,15 @@ mkdir -p data/embeddings
 wget http://nlp.stanford.edu/data/glove.840B.300d.zip -O data/embeddings/glove.840B.300d.zip
 cd data/embeddings
 unzip glove.840B.300d.zip
+wget https://raw.githubusercontent.com/minimaxir/char-embeddings/master/glove.840B.300d-char.txt -O data/embeddings/glove.840B.300d-char.txt
+
 ```
 
 Then, you need to preprocess these data.
 
 ```bash
-python script/preprocess data/datasets data/datasets --split SQuAD-train-v1.1
-python script/preprocess data/datasets data/datasets --split SQuAD-dev-v1.1
+python preprocess data/datasets data/datasets --split SQuAD-train-v1.1
+python preprocess data/datasets data/datasets --split SQuAD-dev-v1.1
 ```
 
 If you want to use multicores to speed up, you could add `--num-workers 4` in commands.
@@ -65,17 +66,17 @@ If you want to use multicores to speed up, you could add `--num-workers 4` in co
 There are some parameters to set but default values are ready. If you are not interested in tuning parameters, you can use default values. Just run:
 
 ```bash
-python script/train.py
+python train.py
 ```
 
-After several hours, you will get the model in `data/models/`, e.g. `20180416-acc9d06d.mdl` and you can see the log file in `data/models/`, e.g. `20180416-acc9d06d.txt`.
+After several hours, you will get the model in `data/models/`, e.g. `mnemoric.mdl` and you can see the log file in `data/models/`, e.g. `mnemoric.txt`.
 
 ### Predict
 
 To evaluate the model you get, you should complete this part.
 
 ```bash
-python script/predict.py --model data/models/20180416-acc9d06d.mdl
+python predict.py --model data/models/mnemoric.mdl
 ```
 
 You need to change the model name in the command above.
@@ -83,15 +84,15 @@ You need to change the model name in the command above.
 You will not get results directly but to use the official `evaluate-v1.1.py` in `data/script`.
 
 ```bash
-python script/evaluate-v1.1.py data/predict/SQuAD-dev-v1.1-20180416-acc9d06d.preds data/datasets/SQuAD-dev-v1.1.json
+python evaluate-v1.1.py data/predict/SQuAD-dev-v1.1-mnemoric.preds data/datasets/SQuAD-dev-v1.1.json
 ```
 
 ### Interactivate
 
-In order to help those who are interested in QA systems, `script/interactivate.py` provides an easy but good demo.
+In order to help those who are interested in QA systems, `interactive.py` provides an easy but good demo.
 
 ```bash
-python script/interactivate.py --model data/models/20180416-acc9d06d.mdl
+python interactive.py --model data/models/mnemoric.mdl
 ```
 
 Then you will drop into an interactive session. It looks like:
@@ -122,20 +123,28 @@ Then you will drop into an interactive session. It looks like:
 If you want to tune parameters to achieve a higher score, you can get instructions about parameters via using
 
 ```bash
-python script/preprocess.py --help
+python preprocess.py --help
 ```
 
 ```bash
-python script/train.py --help
+python train.py --help
 ```
 
 ```bash
-python script/predict.py --help
+python predict.py --help
 ```
 
 ```bash
-python script/interactivate.py --help
+python interactive.py --help
 ```
+
+Train cmd:
+`
+python train.py --model-type mnemonic --model-name mnemonic-20180611 --checkp
+oint yes 2>&1 | tee data/train_mnemonic.log && python train.py --model-type r-net --model-name r-net-20180611 --check
+point yes 2>&1 | tee data/train_rnet.log && python train.py --model-type rnn --model-name drqa-20180611 --checkpoint
+yes 2>&1 | tee data/train_drqa.log
+`
 
 ## License
 

@@ -12,6 +12,7 @@ Requires spaCy package and the spaCy english model.
 import spacy
 import copy
 
+
 class Tokens(object):
     """A class to represent a list of tokenized text."""
     TEXT = 0
@@ -40,7 +41,7 @@ class Tokens(object):
     def untokenize(self):
         """Returns the original text (with whitespace reinserted)."""
         return ''.join([t[self.TEXT_WS] for t in self.data]).strip()
-    
+
     def chars(self, uncased=False):
         """Returns a list of the first character of each token
 
@@ -101,6 +102,7 @@ class Tokens(object):
               True or False to keep or not keep the ngram
             as_string: return the ngram as a string vs list
         """
+
         def _skip(gram):
             if not filter_fn:
                 return False
@@ -156,7 +158,6 @@ class SpacyTokenizer(object):
             self.nlp.remove_pipe('tagger')
         if 'ner' not in self.annotators:
             self.nlp.remove_pipe('ner')
-        
 
     def tokenize(self, text):
         # We don't treat new lines as tokens.

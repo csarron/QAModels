@@ -18,12 +18,12 @@ from spacy_tokenizer import SpacyTokenizer
 
 logger = logging.getLogger(__name__)
 
-
 # ------------------------------------------------------------------------------
 # Tokenize + annotate
 # ------------------------------------------------------------------------------
 
 TOK = None
+
 
 def init(options):
     global TOK
@@ -34,6 +34,7 @@ def init(options):
 def tokenize(text):
     global TOK
     return TOK.tokenize(text)
+
 
 def get_annotators_for_model(model):
     annotators = set()
@@ -69,7 +70,7 @@ class Predictor(object):
 
         if embedding_file:
             logger.info('Expanding dictionary...')
-            utils.index_embedding_words(embedding_file)
+            words = utils.index_embedding_words(embedding_file)
             added_words = self.model.expand_dictionary(words)
             self.model.load_embeddings(added_words, embedding_file)
         if char_embedding_file:

@@ -94,13 +94,13 @@ def vectorize(ex, model, single_answer=False):
 
     # ...or with target(s) (might still be empty if answers is empty)
     if single_answer:
-        assert(len(ex['answers']) > 0)
+        assert (len(ex['answers']) > 0)
         start = torch.LongTensor(1).fill_(ex['answers'][0][0])
         end = torch.LongTensor(1).fill_(ex['answers'][0][1])
     else:
         start = [a[0] for a in ex['answers']]
         end = [a[1] for a in ex['answers']]
-    
+
     return document, document_char, c_features, question, question_char, q_features, start, end, ex['id']
 
 
@@ -160,10 +160,10 @@ def batchify(batch):
         # ...Otherwise add targets
         if torch.is_tensor(batch[0][NUM_INPUTS]):
             y_s = torch.cat([ex[NUM_INPUTS] for ex in batch])
-            y_e = torch.cat([ex[NUM_INPUTS+1] for ex in batch])
+            y_e = torch.cat([ex[NUM_INPUTS + 1] for ex in batch])
         else:
             y_s = [ex[NUM_INPUTS] for ex in batch]
-            y_e = [ex[NUM_INPUTS+1] for ex in batch]
+            y_e = [ex[NUM_INPUTS + 1] for ex in batch]
     else:
         raise RuntimeError('Incorrect number of inputs per example.')
 

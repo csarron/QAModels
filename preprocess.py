@@ -5,21 +5,21 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 """Preprocess the SQuAD dataset for training."""
-
-import sys
-sys.path.append('.')
 import argparse
 import os
+import sys
+
 try:
     import ujson as json
 except ImportError:
     import json
 import time
 
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from multiprocessing.util import Finalize
 from functools import partial
 from spacy_tokenizer import SpacyTokenizer
+from multiprocessing import freeze_support
 
 # ------------------------------------------------------------------------------
 # Tokenize + annotate.
@@ -77,8 +77,8 @@ def find_answer(offsets, begin_offset, end_offset):
     """Match token offsets with the char begin/end offsets of the answer."""
     start = [i for i, tok in enumerate(offsets) if tok[0] == begin_offset]
     end = [i for i, tok in enumerate(offsets) if tok[1] == end_offset]
-    assert(len(start) <= 1)
-    assert(len(end) <= 1)
+    assert (len(start) <= 1)
+    assert (len(end) <= 1)
     if len(start) == 1 and len(end) == 1:
         return start[0], end[0]
 
@@ -110,7 +110,7 @@ def process_dataset(data, tokenizer, workers=None):
         clemma = c_tokens[data['qid2cid'][idx]]['lemma']
         cpos = c_tokens[data['qid2cid'][idx]]['pos']
         cner = c_tokens[data['qid2cid'][idx]]['ner']
-        
+
         ans_tokens = []
         if len(data['answers']) > 0:
             for ans in data['answers'][idx]:
@@ -139,27 +139,27 @@ def process_dataset(data, tokenizer, workers=None):
 # -----------------------------------------------------------------------------
 # Commandline options
 # -----------------------------------------------------------------------------
+if __name__ == '__main__':
+    freeze_support()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('data_dir', type=str, help='Path to SQuAD data directory')
+    parser.add_argument('out_dir', type=str, help='Path to output file dir')
+    parser.add_argument('--split', type=str, help='Filename for train/dev split')
+    parser.add_argument('--num-workers', type=int, default=1)
+    parser.add_argument('--tokenizer', type=str, default='spacy')
+    args = parser.parse_args()
 
+    t0 = time.time()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('data_dir', type=str, help='Path to SQuAD data directory')
-parser.add_argument('out_dir', type=str, help='Path to output file dir')
-parser.add_argument('--split', type=str, help='Filename for train/dev split')
-parser.add_argument('--num-workers', type=int, default=1)
-parser.add_argument('--tokenizer', type=str, default='spacy')
-args = parser.parse_args()
+    in_file = os.path.join(args.data_dir, args.split + '.json')
+    print('Loading dataset %s' % in_file, file=sys.stderr)
+    dataset = load_dataset(in_file)
 
-t0 = time.time()
-
-in_file = os.path.join(args.data_dir, args.split + '.json')
-print('Loading dataset %s' % in_file, file=sys.stderr)
-dataset = load_dataset(in_file)
-
-out_file = os.path.join(
-    args.out_dir, '%s-processed-%s.txt' % (args.split, args.tokenizer)
-)
-print('Will write to file %s' % out_file, file=sys.stderr)
-with open(out_file, 'w') as f:
-    for ex in process_dataset(dataset, args.tokenizer, args.num_workers):
-        f.write(json.dumps(ex) + '\n')
-print('Total time: %.4f (s)' % (time.time() - t0))
+    out_file = os.path.join(
+        args.out_dir, '%s-processed-%s.txt' % (args.split, args.tokenizer)
+    )
+    print('Will write to file %s' % out_file, file=sys.stderr)
+    with open(out_file, 'w') as f:
+        for ex in process_dataset(dataset, args.tokenizer, args.num_workers):
+            f.write(json.dumps(ex) + '\n')
+    print('Total time: %.4f (s)' % (time.time() - t0))

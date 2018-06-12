@@ -21,6 +21,7 @@ from torch.autograd import Variable
 class R_Net(nn.Module):
     RNN_TYPES = {'lstm': nn.LSTM, 'gru': nn.GRU, 'rnn': nn.RNN}
     CELL_TYPES = {'lstm': nn.LSTMCell, 'gru': nn.GRUCell, 'rnn': nn.RNNCell}
+
     def __init__(self, args, normalize=True):
         super(R_Net, self).__init__()
         # Store config
@@ -33,8 +34,8 @@ class R_Net(nn.Module):
 
         # Char embeddings (+1 for padding)
         self.char_embedding = nn.Embedding(args.char_size,
-                                      args.char_embedding_dim,
-                                      padding_idx=0)
+                                           args.char_embedding_dim,
+                                           padding_idx=0)
 
         # Char rnn to generate char features
         self.char_rnn = layers.StackedBRNN(
@@ -68,7 +69,7 @@ class R_Net(nn.Module):
         if args.concat_rnn_layers:
             doc_hidden_size *= args.doc_layers
             question_hidden_size *= args.question_layers
-        
+
         # Gated-attention-based RNN of the whole question
         self.question_attn = layers.SeqAttnMatch(question_hidden_size, identity=False)
         self.question_attn_gate = layers.Gate(doc_hidden_size + question_hidden_size)
@@ -113,9 +114,9 @@ class R_Net(nn.Module):
         )
 
         self.ptr_net = layers.PointerNetwork(
-            x_size = doc_self_attn_hidden_size, 
-            y_size = question_hidden_size, 
-            hidden_size = args.hidden_size, 
+            x_size=doc_self_attn_hidden_size,
+            y_size=question_hidden_size,
+            hidden_size=args.hidden_size,
             dropout_rate=args.dropout_rnn,
             cell_type=nn.GRUCell,
             normalize=normalize
@@ -155,7 +156,7 @@ class R_Net(nn.Module):
 
         # Encode document with RNN
         c = self.encode_rnn(torch.cat(crnn_input, 2), x1_mask)
-        
+
         # Encode question with RNN
         q = self.encode_rnn(torch.cat(qrnn_input, 2), x2_mask)
 
@@ -172,5 +173,5 @@ class R_Net(nn.Module):
 
         # Predict
         start_scores, end_scores = self.ptr_net(c, q, x1_mask, x2_mask)
-        
+
         return start_scores, end_scores

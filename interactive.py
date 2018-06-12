@@ -5,9 +5,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 """A script to run the reader model interactively."""
-
-import sys
-sys.path.append('.')
 import torch
 import code
 import argparse
@@ -26,6 +23,7 @@ console.setFormatter(fmt)
 logger.addHandler(console)
 
 PREDICTOR = None
+
 
 # ------------------------------------------------------------------------------
 # Drop in to interactive mode
@@ -57,6 +55,7 @@ banner = """
 def usage():
     print(banner)
 
+
 # ------------------------------------------------------------------------------
 # Commandline arguments & init
 # ------------------------------------------------------------------------------
@@ -67,11 +66,11 @@ if __name__ == '__main__':
                         help='Path to model to use')
     parser.add_argument('--embedding-file', type=str, default=None,
                         help=('Expand dictionary to use all pretrained '
-                            'embeddings in this file.'))
+                              'embeddings in this file.'))
     parser.add_argument('--char-embedding-file', type=str, default=None,
                         help=('Expand dictionary to use all pretrained '
-                            'char embeddings in this file.'))
-    parser.add_argument('--num-workers', type=int, default=int(cpu_count()/2),
+                              'char embeddings in this file.'))
+    parser.add_argument('--num-workers', type=int, default=int(cpu_count() / 2),
                         help='Number of CPU processes (for tokenizing, etc)')
     parser.add_argument('--no-cuda', action='store_true',
                         help='Use CPU only')

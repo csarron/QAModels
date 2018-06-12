@@ -6,7 +6,6 @@
 # LICENSE file in the root directory of this source tree.
 """Reader utilities."""
 
-
 try:
     import ujson as json
 except ImportError:
@@ -14,6 +13,7 @@ except ImportError:
 import time
 import logging
 import string
+
 try:
     import regex as re
 except ImportError:
@@ -99,6 +99,7 @@ def index_embedding_words(embedding_file):
 
 def load_words(args, examples):
     """Iterate and index all the words in examples (documents + questions)."""
+
     def _insert(iterable):
         for w in iterable:
             w = Dictionary.normalize(w)
@@ -129,6 +130,7 @@ def build_word_dict(args, examples):
         word_dict.add(w)
     return word_dict
 
+
 def index_embedding_chars(char_embedding_file):
     """Put all the chars in char_embedding_file into a set."""
     chars = set()
@@ -138,8 +140,10 @@ def index_embedding_chars(char_embedding_file):
             chars.add(c)
     return chars
 
+
 def load_chars(args, examples):
     """Iterate and index all the chars in examples (documents + questions)."""
+
     def _insert(iterable):
         for c in iterable:
             c = Dictionary.normalize(c)
@@ -160,6 +164,7 @@ def load_chars(args, examples):
         _insert(ex['document_char'])
     return chars
 
+
 def build_char_dict(args, examples):
     """Return a char dictionary from question and document words in
     provided examples.
@@ -168,6 +173,7 @@ def build_char_dict(args, examples):
     for c in load_chars(args, examples):
         char_dict.add(c)
     return char_dict
+
 
 def top_question_words(args, examples, word_dict):
     """Count and return the most common question words in provided examples."""
@@ -182,6 +188,7 @@ def top_question_words(args, examples, word_dict):
 
 def build_feature_dict(args, examples):
     """Index features (one hot) from fields in examples and options."""
+
     def _insert(feature):
         if feature not in feature_dict:
             feature_dict[feature] = len(feature_dict)
@@ -225,6 +232,7 @@ def build_feature_dict(args, examples):
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
+
     def remove_articles(text):
         return re.sub(r'\b(a|an|the)\b', ' ', text)
 

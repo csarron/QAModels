@@ -19,6 +19,7 @@ import layers
 class RnnDocReader(nn.Module):
     RNN_TYPES = {'lstm': nn.LSTM, 'gru': nn.GRU, 'rnn': nn.RNN}
     CELL_TYPES = {'lstm': nn.LSTMCell, 'gru': nn.GRUCell, 'rnn': nn.RNNCell}
+
     def __init__(self, args, normalize=True):
         super(RnnDocReader, self).__init__()
         # Store config
@@ -29,8 +30,8 @@ class RnnDocReader(nn.Module):
                                       args.embedding_dim,
                                       padding_idx=0)
         self.char_embedding = nn.Embedding(args.char_size,
-                                      args.char_embedding_dim,
-                                      padding_idx=0)
+                                           args.char_embedding_dim,
+                                           padding_idx=0)
 
         # Projection for attention weighted question
         if args.use_qemb:
@@ -72,7 +73,6 @@ class RnnDocReader(nn.Module):
             doc_hidden_size *= args.doc_layers
             question_hidden_size *= args.question_layers
 
-        
         # Question merging
         if args.question_merge not in ['avg', 'self_attn']:
             raise NotImplementedError('merge_mode = %s' % args.merge_mode)
@@ -90,7 +90,6 @@ class RnnDocReader(nn.Module):
             question_hidden_size,
             normalize=normalize,
         )
-        
 
     def forward(self, x1, x1_c, x1_f, x1_mask, x2, x2_c, x2_f, x2_mask):
         """Inputs:
@@ -128,7 +127,7 @@ class RnnDocReader(nn.Module):
 
         # Encode question with RNN + merge hiddens
         question_hiddens = self.question_rnn(x2_emb, x2_mask)
-        
+
         if self.args.question_merge == 'avg':
             q_merge_weights = layers.uniform_weights(question_hiddens, x2_mask)
         elif self.args.question_merge == 'self_attn':
@@ -138,5 +137,5 @@ class RnnDocReader(nn.Module):
         # Predict start and end positions
         start_scores = self.start_attn(doc_hiddens, question_hidden, x1_mask)
         end_scores = self.end_attn(doc_hiddens, question_hidden, x1_mask)
-        
+
         return start_scores, end_scores

@@ -21,7 +21,7 @@ MODEL_ARCHITECTURE = {
 # Index of arguments concerning the model optimizer/training
 MODEL_OPTIMIZER = {
     'fix_embeddings', 'optimizer', 'learning_rate', 'momentum', 'weight_decay',
-    'rho', 'eps', 'max_len', 'grad_clipping', 'tune_partial', 
+    'rho', 'eps', 'max_len', 'grad_clipping', 'tune_partial',
     'rnn_padding', 'dropout_rnn', 'dropout_rnn_output', 'dropout_emb'
 }
 
@@ -36,14 +36,14 @@ def add_model_args(parser):
     # Model architecture
     model = parser.add_argument_group('Reader Model Architecture')
     model.add_argument('--model-type', type=str, default='mnemonic',
-                       help='Model architecture type: rnn, r_net, mnemonic')
+                       help='Model architecture type: rnn, r-net, mnemonic')
     model.add_argument('--embedding-dim', type=int, default=300,
                        help='Embedding size if embedding_file is not given')
     model.add_argument('--char-embedding-dim', type=int, default=50,
                        help='Embedding size if char_embedding_file is not given')
-    model.add_argument('--hidden-size', type=int, default=100,
+    model.add_argument('--hidden-size', type=int, default=128,
                        help='Hidden size of RNN units')
-    model.add_argument('--char-hidden-size', type=int, default=50,
+    model.add_argument('--char-hidden-size', type=int, default=64,
                        help='Hidden size of char RNN units')
     model.add_argument('--doc-layers', type=int, default=3,
                        help='Number of encoding layers for document')
@@ -75,9 +75,9 @@ def add_model_args(parser):
 
     # Optimization details
     optim = parser.add_argument_group('Reader Optimization')
-    optim.add_argument('--dropout-emb', type=float, default=0.2,
+    optim.add_argument('--dropout-emb', type=float, default=0.4,
                        help='Dropout rate for word embeddings')
-    optim.add_argument('--dropout-rnn', type=float, default=0.2,
+    optim.add_argument('--dropout-rnn', type=float, default=0.4,
                        help='Dropout rate for RNN states')
     optim.add_argument('--dropout-rnn-output', type='bool', default=True,
                        help='Whether to dropout the RNN output')
