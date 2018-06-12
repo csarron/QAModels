@@ -55,8 +55,8 @@ wget https://raw.githubusercontent.com/minimaxir/char-embeddings/master/glove.84
 Then, you need to preprocess these data.
 
 ```bash
-python preprocess data/datasets data/datasets --split SQuAD-train-v1.1
-python preprocess data/datasets data/datasets --split SQuAD-dev-v1.1
+python preprocess.py data/datasets data/datasets --split SQuAD-train-v1.1
+python preprocess.py data/datasets data/datasets --split SQuAD-dev-v1.1
 ```
 
 If you want to use multicores to speed up, you could add `--num-workers 4` in commands.
