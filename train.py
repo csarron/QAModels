@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 """Main reader training script."""
 import argparse
-
+import glob
 import numpy as np
 import torch
 import sys
@@ -60,11 +60,11 @@ def add_train_args(parser):
     runtime.add_argument('--random-seed', type=int, default=1013,
                          help=('Random seed for all numpy/torch/cuda '
                                'operations (for reproducibility)'))
-    runtime.add_argument('--num-epochs', type=int, default=40,
+    runtime.add_argument('--num-epochs', type=int, default=80,
                          help='Train data iterations')
-    runtime.add_argument('--batch-size', type=int, default=32,
+    runtime.add_argument('--batch-size', type=int, default=48,
                          help='Batch size for training')
-    runtime.add_argument('--test-batch-size', type=int, default=128,
+    runtime.add_argument('--test-batch-size', type=int, default=256,
                          help='Batch size during validation/testing')
 
     # Files
@@ -95,13 +95,16 @@ def add_train_args(parser):
 
     # Saving + loading
     save_load = parser.add_argument_group('Saving/Loading')
-    save_load.add_argument('--checkpoint', type='bool', default=False,
+    save_load.add_argument('--checkpoint', type='bool', default=True,
                            help='Save model + optimizer state after each epoch')
     save_load.add_argument('--pretrained', type=str, default='',
                            help='Path to a pretrained model to warm-start with')
     save_load.add_argument('--expand-dictionary', type='bool', default=False,
                            help='Expand dictionary of pretrained model to ' +
                                 'include training/dev words of new data')
+    save_load.add_argument('--early-stop', type=int, default=10,
+                           help='Checkpoints for early stop')
+
     # Data preprocessing
     preprocess = parser.add_argument_group('Preprocessing')
     preprocess.add_argument('--uncased-question', type='bool', default=False,
@@ -288,7 +291,7 @@ def validate_unofficial(args, data_loader, model, global_stats, mode):
         if mode == 'train' and examples >= 1e4:
             break
 
-    logger.info('%s valid unofficial: Epoch = %d | start = %.2f | ' %
+    logger.info('eval: %s unofficial, epoch = %d | start = %.2f | ' %
                 (mode, global_stats['epoch'], start_acc.avg) +
                 'end = %.2f | exact = %.2f | examples = %d | ' %
                 (end_acc.avg, exact_match.avg, examples) +
@@ -331,7 +334,7 @@ def validate_official(args, data_loader, model, global_stats,
 
         examples += batch_size
 
-    logger.info('dev valid official: Epoch = %d | EM = %.2f | ' %
+    logger.info('eval: dev official, epoch = %d | EM = %.2f | ' %
                 (global_stats['epoch'], exact_match.avg * 100) +
                 'F1 = %.2f | examples = %d | valid time = %.2f (s)' %
                 (f1.avg * 100, examples, eval_time.time()))
@@ -512,6 +515,10 @@ def main(args):
     logger.info('-' * 100)
     logger.info('Starting training...')
     stats = {'timer': utils.Timer(), 'epoch': 0, 'best_valid': 0}
+    model_prefix = os.path.join(args.model_dir, args.model_name)
+
+    kept_models = []
+    best_model_path = ''
     for epoch in range(start_epoch, args.num_epochs):
         stats['epoch'] = epoch
 
@@ -519,25 +526,48 @@ def main(args):
         train(args, train_loader, model, stats)
 
         # Validate unofficial (train)
+        logger.info('eval: train split unofficially...')
         validate_unofficial(args, train_loader, model, stats, mode='train')
 
         if args.official_eval:
             # Validate official (dev)
+            logger.info('eval: dev split unofficially..')
             result = validate_official(args, dev_loader, model, stats,
                                        dev_offsets, dev_texts, dev_answers)
         else:
             # Validate unofficial (dev)
+            logger.info('train: evaluating dev split evaluating dev official...')
             result = validate_unofficial(args, dev_loader, model, stats, mode='dev')
 
+        em = result['exact_match']
+        f1 = result['f1']
+        suffix = 'em_{:4.2f}-f1_{:4.2f}.mdl'.format(em, f1)
         # Save best valid
-        if args.valid_metric is None or args.valid_metric == 'None':
-            model.save(args.model_file)
-        elif result[args.valid_metric] > stats['best_valid']:
-            logger.info('Best valid: %s = %.2f (epoch %d, %d updates)' %
-                        (args.valid_metric, result[args.valid_metric],
-                         stats['epoch'], model.updates))
-            model.save(args.model_file)
-            stats['best_valid'] = result[args.valid_metric]
+        model_file = '{}-epoch_{}-{}'.format(model_prefix, epoch, suffix)
+        if args.valid_metric:
+            if result[args.valid_metric] > stats['best_valid']:
+                for f in glob.glob('{}-best*'.format(model_prefix)):
+                    os.remove(f)
+                logger.info('eval: dev best %s = %.2f (epoch %d, %d updates)' %
+                            (args.valid_metric, result[args.valid_metric],
+                             stats['epoch'], model.updates))
+                model_file = '{}-best-epoch_{}-{}'.format(model_prefix, epoch, suffix)
+                best_model_path = model_file
+                model.save(model_file)
+                stats['best_valid'] = result[args.valid_metric]
+                for f in kept_models:
+                    os.remove(f)
+                kept_models.clear()
+            else:
+                model.save(model_file)
+                kept_models.append(model_file)
+                if len(kept_models) >= args.early_stop:
+                    logger.info('Finished training due to %s not improved for %d epochs, best model is at: %s' %
+                                (args.valid_metric, args.early_stop, best_model_path))
+                    return
+        else:
+            # just save model every epoch since no validation metric is given
+            model.save(model_file)
 
 
 if __name__ == '__main__':
