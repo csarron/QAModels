@@ -55,8 +55,8 @@ wget https://raw.githubusercontent.com/minimaxir/char-embeddings/master/glove.84
 Then, you need to preprocess these data.
 
 ```bash
-python preprocess.py data/datasets data/datasets --split SQuAD-train-v1.1
-python preprocess.py data/datasets data/datasets --split SQuAD-dev-v1.1
+python preprocess data/datasets data/datasets --split SQuAD-train-v1.1
+python preprocess data/datasets data/datasets --split SQuAD-dev-v1.1
 ```
 
 If you want to use multicores to speed up, you could add `--num-workers 4` in commands.
@@ -139,12 +139,12 @@ python interactive.py --help
 ```
 
 Train cmd:
-`
-python train.py --model-type mnemonic --model-name mnemonic-20180611 --checkp
-oint yes 2>&1 | tee data/train_mnemonic.log && python train.py --model-type r-net --model-name r-net-20180611 --check
-point yes 2>&1 | tee data/train_rnet.log && python train.py --model-type rnn --model-name drqa-20180611 --checkpoint
-yes 2>&1 | tee data/train_drqa.log
-`
+
+`python train.py --model-type drqa --model-name drqa --batch-size 32 --dropout-rnn 0.4 2>&1 | tee data/train_drqa.log`
+
+`python train.py --model-type r-net --model-name r-net  --dropout-rnn 0.1  2>&1 | tee data/train_rnet.log`
+
+`python train.py --model-type mnemonic --model-name mnemonic 2>&1 | tee data/train_mnemonic.log`
 
 ## License
 

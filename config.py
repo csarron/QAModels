@@ -36,7 +36,7 @@ def add_model_args(parser):
     # Model architecture
     model = parser.add_argument_group('Reader Model Architecture')
     model.add_argument('--model-type', type=str, default='mnemonic',
-                       help='Model architecture type: rnn, r-net, mnemonic')
+                       help='Model architecture type: drqa, r-net, mnemonic')
     model.add_argument('--embedding-dim', type=int, default=300,
                        help='Embedding size if embedding_file is not given')
     model.add_argument('--char-embedding-dim', type=int, default=50,
