@@ -14,13 +14,11 @@ Please feel free to contact with Xin Liu (xliucr@connect.ust.hk) if you have any
 | Model                                 | DEV_EM | DEV_F1 |
 | ------------------------------------- | ------ | ------ |
 | Document Reader (original paper)      | 69.5   | 78.8   |
-| Document Reader (trained model)       | 69.4   | 78.6   |
-| R-Net (original paper 1)              | 71.1   | 79.5   |
-| R-Net (original paper 2)              | 72.3   | 80.6   |
-| R-Net (trained model)                 | 70.2   | 79.2   |
-| Mnemonic Reader (original paper)      | 71.8   | 81.2   |
+| Document Reader (trained model)       | 69.6   | 78.6   |
+| R-Net (original paper)              | 71.1   | 79.5   |
+| R-Net (trained model)                 | 70.7   | 79.7   |
 | Mnemonic Reader + RL (original paper) | 72.1   | 81.6   |
-| Mnemonic Reader (trained model)       | 72.3   | 81.4   |
+| Mnemonic Reader (trained model)       | 72.8   | 81.6   |
 
 
 ### Requirements
@@ -43,31 +41,33 @@ wget https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v1.1.json -O data/
 wget https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v1.1.json -O data/datasets/SQuAD-dev-v1.1.json
 ```
 
+(you may need `sudo apt install p7zip-full` to install 7z unzip tool)
+
 ```bash
 mkdir -p data/embeddings
-wget http://nlp.stanford.edu/data/glove.840B.300d.zip -O data/embeddings/glove.840B.300d.zip
+wget https://github.com/csarron/QAModels/releases/download/data/glove.840B.300d.7z -O data/embeddings/glove.840B.300d.7z
 cd data/embeddings
-unzip glove.840B.300d.zip
-wget https://raw.githubusercontent.com/minimaxir/char-embeddings/master/glove.840B.300d-char.txt -O data/embeddings/glove.840B.300d-char.txt
+7z x glove.840B.300d.7z 
+wget https://github.com/csarron/QAModels/releases/download/data/glove.840B.300d-char.txt -O data/embeddings/glove.840B.300d-char.txt
 
 ```
 
 Then, you need to preprocess these data.
 
 ```bash
-python preprocess data/datasets data/datasets --split SQuAD-train-v1.1
-python preprocess data/datasets data/datasets --split SQuAD-dev-v1.1
+python preprocess.py data/datasets data/datasets --split SQuAD-train-v1.1
+python preprocess.py data/datasets data/datasets --split SQuAD-dev-v1.1
 ```
 
 If you want to use multicores to speed up, you could add `--num-workers 4` in commands.
 
 ### Train
 
-There are some parameters to set but default values are ready. If you are not interested in tuning parameters, you can use default values. Just run:
+`python train.py --model-type drqa --model-name drqa --batch-size 32 --dropout-rnn 0.4 2>&1 | tee data/train_drqa.log`
 
-```bash
-python train.py
-```
+`python train.py --model-type r-net --model-name r-net  --dropout-rnn 0.2 --hidden-size 75  2>&1 | tee data/train_rnet.log`
+
+`python train.py --model-type mnemonic --model-name mnemonic 2>&1 | tee data/train_mnemonic.log`
 
 After several hours, you will get the model in `data/models/`, e.g. `mnemoric.mdl` and you can see the log file in `data/models/`, e.g. `mnemoric.txt`.
 
@@ -118,6 +118,10 @@ Then you will drop into an interactive session. It looks like:
 +------+----------------------------+-----------+
 ```
 
+### Web Demo
+
+`python demo.py --model data/models/mnemonic-best-epoch_32-em_72.8-f1_81.6.mdl`
+
 ### More parameters
 
 If you want to tune parameters to achieve a higher score, you can get instructions about parameters via using
@@ -137,14 +141,6 @@ python predict.py --help
 ```bash
 python interactive.py --help
 ```
-
-Train cmd:
-
-`python train.py --model-type drqa --model-name drqa --batch-size 32 --dropout-rnn 0.4 2>&1 | tee data/train_drqa.log`
-
-`python train.py --model-type r-net --model-name r-net  --dropout-rnn 0.1  2>&1 | tee data/train_rnet.log`
-
-`python train.py --model-type mnemonic --model-name mnemonic 2>&1 | tee data/train_mnemonic.log`
 
 ## License
 
